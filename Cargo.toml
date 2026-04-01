@@ -1,0 +1,17 @@
+[package]
+name = "dhcpv6-option-handler"
+version = "0.1.0"
+edition = "2021"
+description = "Reads DHCPv6 leases and applies option handlers for NTP (56) and TZDB (42)"
+
+[[bin]]
+name = "dhcpv6-handler"
+path = "src/main.rs"
+
+[dependencies]
+anyhow   = "1.0"
+chrono   = { version = "0.4", features = ["clock"] }
+chrono-tz = "0.9"
+strsim   = "0.11"
+log      = "0.4"
+env_logger = "0.11"
