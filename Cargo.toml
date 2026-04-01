@@ -1,7 +1,7 @@
 [package]
 name = "dhcpv6-option-handler"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "Reads DHCPv6 leases and applies option handlers for NTP (56) and TZDB (42)"
 
 [[bin]]
@@ -15,3 +15,6 @@ chrono-tz = "0.9"
 strsim   = "0.11"
 log      = "0.4"
 env_logger = "0.11"
+pcap = "2.4"
+etherparse = "0.19"
+dhcproto = "0.14"
