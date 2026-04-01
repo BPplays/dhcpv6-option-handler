@@ -10,7 +10,7 @@ use log::info;
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
-    net::Ipv6Addr,
+    net::Ipv6Addr, time::Duration,
 };
 
 use dhcproto::v6::{Decoder as DhcpDecoder, Decodable, Message};
@@ -222,7 +222,8 @@ fn parse_information_refresh_time(value: &[u8], facts: &mut PacketFacts) -> Resu
         return Ok(());
     }
 
-    let expire_at = Utc::now() + Duration::seconds(secs as i64);
+    // add to account for renew time
+    let expire_at = Utc::now() + Duration::seconds(secs as i64) + Duration::seconds(50);
     facts.expires = Some(expire_at);
     Ok(())
 }
