@@ -2,6 +2,8 @@ mod interfaces;
 mod lease;
 mod options;
 
+use chrono::{DateTime, Duration, Utc};
+
 use anyhow::Result;
 use log::info;
 
@@ -21,11 +23,14 @@ const DHCPV6_CLIENT_PORT: u16 = 546;
 const OPT_NTP_SERVER: u16 = 56;
 const OPT_TZDB: u16 = 42;
 const OPT_RELAY_MESSAGE: u16 = 9;
+const OPT_INFORMATION_REFRESH_TIME: u16 = 32;
+const IRT_INFINITY: u32 = 0xffff_ffff;
 
 #[derive(Debug, Default, Clone)]
 struct PacketFacts {
-    ntp_servers: Vec<String>,
-    tzdb_names: Vec<String>,
+    pub ntp_servers: Vec<String>,
+    pub tzdb_names: Vec<String>,
+    pub expires: Option<DateTime<Utc>>,
 }
 
 trait OptionHandler: Send + Sync {
@@ -156,7 +161,7 @@ fn parse_dhcpv6_message(payload: &[u8], registry: &Registry) -> Result<PacketFac
     // Then we walk the raw options ourselves so we can get exact option bodies.
     // This keeps option handling easy to extend.
     parse_dhcpv6_options(payload)
-        .map(|mut facts| {
+        .map(|facts| {
             // facts already collected from options
             facts
         })
@@ -195,12 +200,30 @@ fn parse_options_recursive(mut data: &[u8], facts: &mut PacketFacts) -> Result<(
             }
             OPT_NTP_SERVER => parse_ntp_option(value, facts)?,
             OPT_TZDB => parse_tzdb_option(value, facts)?,
+            OPT_INFORMATION_REFRESH_TIME => parse_information_refresh_time(value, facts)?,
             _ => {}
         }
 
         data = &data[4 + len..];
     }
 
+    Ok(())
+}
+
+fn parse_information_refresh_time(value: &[u8], facts: &mut PacketFacts) -> Result<(), String> {
+    if value.len() != 4 {
+        return Err("invalid information refresh time length".into());
+    }
+
+    let secs = u32::from_be_bytes(value.try_into().unwrap());
+
+    if secs == IRT_INFINITY {
+        facts.expires = None;
+        return Ok(());
+    }
+
+    let expire_at = Utc::now() + Duration::seconds(secs as i64);
+    facts.expires = Some(expire_at);
     Ok(())
 }
 
